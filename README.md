@@ -23,8 +23,8 @@ This repository contains the pytorch codes and trained models described in the I
 - Clone this repo:
 
   ```shell
-  https://github.com/bytedance/Online-Multi-Granularity-Distillation-for-GAN-Compression.git
-  cd Online-Multi-Granularity-Distillation-for-GAN-Compression
+  git clone https://github.com/bytedance/OMGD.git
+  cd OMGD
   ```
 
 - Install dependencies.
