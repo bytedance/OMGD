@@ -1,6 +1,6 @@
 # Online Multi-Granularity Distillation for GAN Compression (ICCV2021)
 
-This repository contains the pytorch codes and trained models described in the ICCV2021 paper "Online Multi-Granularity Distillation for GAN Compression[https://arxiv.org/pdf/2108.06908.pdf]" By Yuxi Ren*, Jie Wu*, Xuefeng Xiao, Jianchao Yang.
+This repository contains the pytorch codes and trained models described in the ICCV2021 paper "[Online Multi-Granularity Distillation for GAN Compression](https://arxiv.org/pdf/2108.06908.pdf)" By Yuxi Ren*, Jie Wu*, Xuefeng Xiao, Jianchao Yang.
 ## Overview
 
 ![overview](imgs/OMGD.png)
