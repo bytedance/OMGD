@@ -68,6 +68,14 @@ This repository contains the pytorch codes and trained models described in the I
 ## Citation
 
 If you use this code for your research, please cite our paper.
+  ```shell
+@article{ren2021online,
+  title={Online Multi-Granularity Distillation for GAN Compression},
+  author={Ren, Yuxi and Wu, Jie and Xiao, Xuefeng and Yang, Jianchao},
+  journal={arXiv preprint arXiv:2108.06908},
+  year={2021}
+}
+```
 
 ## Acknowledgements
 
