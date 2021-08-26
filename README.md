@@ -1,6 +1,6 @@
 # Online Multi-Granularity Distillation for GAN Compression (ICCV2021)
 
-This repository contains the pytorch codes and trained models described in the ICCV2021 paper "[Online Multi-Granularity Distillation for GAN Compression](https://arxiv.org/pdf/2108.06908.pdf)"  This algorithm is proposed by ByteDance, Intelligent Creation, AutoML Team (字节跳动-智能创作-AutoML团队). 
+This repository contains the pytorch codes and trained models described in the ICCV2021 paper "[Online Multi-Granularity Distillation for GAN Compression](https://arxiv.org/pdf/2108.06908.pdf)".  This algorithm is proposed by ByteDance, Intelligent Creation, AutoML Team (字节跳动-智能创作-AutoML团队). 
 
 Authors: Yuxi Ren*, Jie Wu*, Xuefeng Xiao, Jianchao Yang.
 
