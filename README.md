@@ -46,6 +46,10 @@ Authors: Yuxi Ren*, Jie Wu*, Xuefeng Xiao, Jianchao Yang.
 - horse2zebra
 - summer2winter
 
+### Pretrained Model
+
+Please download the pretrained model in [link](https://drive.google.com/drive/folders/1lDSguCuRDKl2bKQzAuc8hR-UE7eTqWvW?usp=sharing).
+
 
 ### Training
 
