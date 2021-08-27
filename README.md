@@ -48,7 +48,7 @@ Authors: Yuxi Ren*, Jie Wu*, Xuefeng Xiao, Jianchao Yang.
 
 ### Pretrained Model
 
-Please download the pretrained model in [link](https://drive.google.com/drive/folders/1lDSguCuRDKl2bKQzAuc8hR-UE7eTqWvW?usp=sharing).
+We provide a list of pre-trained models in [link](https://drive.google.com/drive/folders/1lDSguCuRDKl2bKQzAuc8hR-UE7eTqWvW?usp=sharing).
 
 
 ### Training
