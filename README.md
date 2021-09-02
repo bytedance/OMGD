@@ -42,9 +42,56 @@ Authors: Yuxi Ren*, Jie Wu*, Xuefeng Xiao, Jianchao Yang.
 ### Data preparation
 
 - edges2shoes
+
+    - Download the dataset
+    ```shell
+    bash datasets/download_pix2pix_dataset.sh edges2shoes-r
+    ```
+  
+    - Get the statistical information for the ground-truth images for your dataset to compute FID. 
+    ```shell
+    bash datasets/download_real_stat.sh edges2shoes-r B
+    ```
+    
 - cityscapes
+    
+    - Download the dataset
+    Download the dataset (*gtFine_trainvaltest.zip* and *leftImg8bit_trainvaltest.zip*) from [here](https://cityscapes-dataset.com), and preprocess it. 
+    ```shell
+    python datasets/get_trainIds.py database/cityscapes-origin/gtFine/
+    python datasets/prepare_cityscapes_dataset.py \
+    --gtFine_dir database/cityscapes-origin/gtFine \
+    --leftImg8bit_dir database/cityscapes-origin/leftImg8bit \
+    --output_dir database/cityscapes \
+    --train_table_path datasets/train_table.txt \
+    --val_table_path datasets/val_table.txt
+    ```
+      
+    - Get the statistical information for the ground-truth images for your dataset to compute FID. 
+    ```shell
+    bash datasets/download_real_stat.sh cityscapes A
+    ```
+
 - horse2zebra
+
+    - Download the dataset
+    ```shell
+    bash datasets/download_cyclegan_dataset.sh horse2zebra
+    ```
+
+    - Get the statistical information for the ground-truth images for your dataset to compute FID. 
+    ```shell
+    bash datasets/download_real_stat.sh horse2zebra A
+    bash datasets/download_real_stat.sh horse2zebra B
+    ```
+    
 - summer2winter
+
+    - Download the dataset
+    ```shell
+    bash datasets/download_cyclegan_dataset.sh summer2winter_yosemite
+    ```
+    - Get the statistical information for the ground-truth images for your dataset to compute FID from [here](https://drive.google.com/drive/folders/1JKJlpUDdD4TdXdwPwfdWUiF4PsXLAbto)
 
 ### Pretrained Model
 
