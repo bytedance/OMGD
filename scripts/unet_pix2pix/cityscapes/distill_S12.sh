@@ -6,8 +6,8 @@ python distill.py --dataroot database/cityscapes \
   --log_dir logs/unet_pix2pix/cityscapes/distill_S12 \
   --batch_size 4 --num_teacher 2 --n_share 5 \
   --real_stat_path real_stat/cityscapes_A.npz \
-  --teacher_ngf 48 --teacher_ngf_1 12 --student_ngf 12  --norm batch --ndf 96 \
-  --teacher_netG unet_256 --teacher_netG_1 unet_deepest_256 --netD multi_n_layers \
+  --teacher_ngf_w 48 --teacher_ngf_d 12 --student_ngf 12  --norm batch --ndf 96 \
+  --teacher_netG_w unet_256 --teacher_netG_d unet_deepest_256 --netD multi_n_layers \
   --nepochs 300 --nepochs_decay 450 --n_dis 3 \
   --save_latest_freq 25000 --save_epoch_freq 25 \
   --drn_path drn-d-105_ms_cityscapes.pth \
