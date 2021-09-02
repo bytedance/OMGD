@@ -22,25 +22,25 @@ class BaseMultiTeacherDistiller(BaseModel):
     def modify_commandline_options(parser, is_train):
         assert is_train
         parser = super(BaseMultiTeacherDistiller, BaseMultiTeacherDistiller).modify_commandline_options(parser, is_train)
-        parser.add_argument('--teacher_netG', type=str, default='unet_256',
+        parser.add_argument('--teacher_netG_w', type=str, default='unet_256',
                             help='specify teacher generator architecture',)
-        parser.add_argument('--teacher_netG_1', type=str, default='unet_deepest_256',
+        parser.add_argument('--teacher_netG_d', type=str, default='unet_deepest_256',
                             help='specify teacher generator architecture',)
         parser.add_argument('--student_netG', type=str, default='unet_256',
                             help='specify student generator architecture',)
 
         parser.add_argument('--num_teacher', type=int, default=2,
                             help='the number of teacher generators')
-        parser.add_argument('--teacher_ngf', type=int, default=64,
+        parser.add_argument('--teacher_ngf_w', type=int, default=64,
                             help='the base number of filters of the teacher generator')
-        parser.add_argument('--teacher_ngf_1', type=int, default=64,
+        parser.add_argument('--teacher_ngf_d', type=int, default=16,
                             help='the base number of filters of the teacher generator')
         parser.add_argument('--student_ngf', type=int, default=16,
                             help='the base number of filters of the student generator')
 
-        parser.add_argument('--restore_teacher_G_path', type=str, default=None,
+        parser.add_argument('--restore_teacher_G_w_path', type=str, default=None,
                             help='the path to restore the wider teacher generator')
-        parser.add_argument('--restore_teacher_G_path_1', type=str, default=None,
+        parser.add_argument('--restore_teacher_G_d_path', type=str, default=None,
                             help='the path to restore the deeper teacher generator')
         parser.add_argument('--restore_student_G_path', type=str, default=None,
                             help='the path to restore the student generator')
@@ -73,18 +73,18 @@ class BaseMultiTeacherDistiller(BaseModel):
     def __init__(self, opt):
         assert opt.isTrain
         super(BaseMultiTeacherDistiller, self).__init__(opt)
-        self.loss_names = ['G_gan',  'G_recon', 'G_dgan', 'G_drecon',
-                           'D_fake', 'D_real', 'D_dfake', 'D_dreal',
+        self.loss_names = ['G_gan_w',  'G_recon_w', 'G_gan_d', 'G_recon_d',
+                           'D_fake_w', 'D_real_w', 'D_fake_d', 'D_real_d',
                            'G_SSIM', 'G_feature', 'G_style', 'G_tv', 'G_CD']
         self.optimizers = []
         self.image_paths = []
-        self.visual_names = ['real_A', 'Sfake_B', 'Tfake_B_0', 'Tfake_B_1', 'real_B']
-        self.model_names = ['netG_student', 'netG_teacher', 'netG_teacher_1', 'netD_teacher', 'netD_teacher_1','netD_student',]
-        self.netG_teacher = networks.define_G(opt.input_nc, opt.output_nc, opt.teacher_ngf,
-                                              opt.teacher_netG, opt.norm, opt.teacher_dropout_rate,
+        self.visual_names = ['real_A', 'Sfake_B', 'Tfake_B_w', 'Tfake_B_d', 'real_B']
+        self.model_names = ['netG_student', 'netG_teacher_w', 'netG_teacher_d', 'netD_teacher','netD_student',]
+        self.netG_teacher_w = networks.define_G(opt.input_nc, opt.output_nc, opt.teacher_ngf_w,
+                                              opt.teacher_netG_w, opt.norm, opt.teacher_dropout_rate,
                                               opt.init_type, opt.init_gain, self.gpu_ids, opt=opt)
-        self.netG_teacher_1 = networks.define_G(opt.input_nc, opt.output_nc, opt.teacher_ngf_1,
-                                                opt.teacher_netG_1, opt.norm, opt.teacher_dropout_rate,
+        self.netG_teacher_d = networks.define_G(opt.input_nc, opt.output_nc, opt.teacher_ngf_d,
+                                                opt.teacher_netG_d, opt.norm, opt.teacher_dropout_rate,
                                                 opt.init_type, opt.init_gain, self.gpu_ids, opt=opt)
         self.netG_student = networks.define_G(opt.input_nc, opt.output_nc, opt.student_ngf,
                                               opt.student_netG, opt.norm, opt.student_dropout_rate,
@@ -99,8 +99,8 @@ class BaseMultiTeacherDistiller(BaseModel):
         else:
             raise NotImplementedError('Unknown dataset mode [%s]!!!' % opt.dataset_mode)
 
-        self.netG_teacher.train()
-        self.netG_teacher_1.train()
+        self.netG_teacher_w.train()
+        self.netG_teacher_d.train()
         self.netG_student.train()
         self.netD_teacher.train()
 
@@ -128,9 +128,9 @@ class BaseMultiTeacherDistiller(BaseModel):
         self.Tacts, self.Sacts = {}, {}
         G_params = [self.netG_student.parameters()]
         if self.opt.lambda_CD:
-            for i, n in enumerate(self.mapping_layers[self.opt.teacher_netG]):
-                ft, fs = self.opt.teacher_ngf, self.opt.student_ngf
-                if 'resnet' in self.opt.teacher_netG:
+            for i, n in enumerate(self.mapping_layers[self.opt.teacher_netG_w]):
+                ft, fs = self.opt.teacher_ngf_w, self.opt.student_ngf
+                if 'resnet' in self.opt.teacher_netG_w:
                     netA = self.build_feature_connector(4 * ft, 4 * fs)
                 elif i == 0:
                     netA = self.build_feature_connector(2 * ft, 2 * fs)
@@ -146,13 +146,13 @@ class BaseMultiTeacherDistiller(BaseModel):
                 self.netAs.append(netA)
 
         self.optimizer_G_student = torch.optim.Adam(itertools.chain(*G_params), lr=opt.lr, betas=(opt.beta1, 0.999))
-        self.optimizer_G_teacher = torch.optim.Adam(self.netG_teacher.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
-        self.optimizer_G_teacher_1 = torch.optim.Adam(self.netG_teacher_1.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
+        self.optimizer_G_teacher_w = torch.optim.Adam(self.netG_teacher_w.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
+        self.optimizer_G_teacher_d = torch.optim.Adam(self.netG_teacher_d.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
         self.optimizer_D_teacher = torch.optim.Adam(self.netD_teacher.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
 
         self.optimizers.append(self.optimizer_G_student)
-        self.optimizers.append(self.optimizer_G_teacher)
-        self.optimizers.append(self.optimizer_G_teacher_1)
+        self.optimizers.append(self.optimizer_G_teacher_w)
+        self.optimizers.append(self.optimizer_G_teacher_d)
         self.optimizers.append(self.optimizer_D_teacher)
 
         self.eval_dataloader = create_eval_dataloader(self.opt, direction=opt.direction)
@@ -192,8 +192,8 @@ class BaseMultiTeacherDistiller(BaseModel):
                     if n in mapping_layers:
                         m.register_forward_hook(get_activation(mem, n))
 
-            add_hook(self.netG_teacher, self.Tacts, self.mapping_layers[self.opt.teacher_netG])
-            add_hook(self.netG_student, self.Sacts, self.mapping_layers[self.opt.teacher_netG])
+            add_hook(self.netG_teacher_w, self.Tacts, self.mapping_layers[self.opt.teacher_netG_w])
+            add_hook(self.netG_student, self.Sacts, self.mapping_layers[self.opt.teacher_netG_w])
 
     def set_input(self, input):
         AtoB = self.opt.direction == 'AtoB'
@@ -210,21 +210,21 @@ class BaseMultiTeacherDistiller(BaseModel):
 
     def backward_D_teacher(self):
         FLAGS.teacher_ids = 1
-        fake_AB = torch.cat((self.real_A, self.Tfake_B_0), 1).detach()
+        fake_AB_w = torch.cat((self.real_A, self.Tfake_B_w), 1).detach()
         real_AB = torch.cat((self.real_A, self.real_B), 1).detach()
-        pred_fake = self.netD_teacher(fake_AB)
-        self.loss_D_fake = self.criterionGAN(pred_fake, False, for_discriminator=True)
-        pred_real = self.netD_teacher(real_AB)
-        self.loss_D_real = self.criterionGAN(pred_real, True, for_discriminator=True)
-        self.loss_D = (self.loss_D_fake + self.loss_D_real) * 0.5
-        fake_AB_1 = torch.cat((self.real_A, self.Tfake_B_1), 1).detach()
+        pred_fake_w = self.netD_teacher(fake_AB_w)
+        self.loss_D_fake_w = self.criterionGAN(pred_fake_w, False, for_discriminator=True)
+        pred_real_w = self.netD_teacher(real_AB)
+        self.loss_D_real_w = self.criterionGAN(pred_real_w, True, for_discriminator=True)
+        self.loss_D = (self.loss_D_fake_w + self.loss_D_real_w) * 0.5
 
         FLAGS.teacher_ids = 2
-        pred_fake_1 = self.netD_teacher(fake_AB_1)
-        pred_real_1 = self.netD_teacher(real_AB)
-        self.loss_D_dfake = self.criterionGAN(pred_fake_1, False, for_discriminator=True)
-        self.loss_D_dreal = self.criterionGAN(pred_real_1, True, for_discriminator=True)
-        self.loss_D += (self.loss_D_dfake + self.loss_D_dreal) * 0.5
+        fake_AB_d = torch.cat((self.real_A, self.Tfake_B_d), 1).detach()
+        pred_fake_d = self.netD_teacher(fake_AB_d)
+        pred_real_d = self.netD_teacher(real_AB)
+        self.loss_D_fake_d = self.criterionGAN(pred_fake_d, False, for_discriminator=True)
+        self.loss_D_real_d = self.criterionGAN(pred_real_d, True, for_discriminator=True)
+        self.loss_D += (self.loss_D_fake_d + self.loss_D_real_d) * 0.5
 
         self.loss_D.backward()
 
@@ -249,10 +249,10 @@ class BaseMultiTeacherDistiller(BaseModel):
     def load_networks(self, verbose=True):
         if self.opt.restore_student_G_path is not None:
             util.load_network(self.netG_student, self.opt.restore_student_G_path, verbose)
-        if self.opt.restore_teacher_G_path is not None:
-            util.load_network(self.netG_teacher, self.opt.restore_teacher_G_path, verbose)
-        if self.opt.restore_teacher_G_path_1 is not None:
-            util.load_network(self.netG_teacher_1, self.opt.restore_teacher_G_path_1, verbose)
+        if self.opt.restore_teacher_G_w_path is not None:
+            util.load_network(self.netG_teacher_w, self.opt.restore_teacher_G_w_path, verbose)
+        if self.opt.restore_teacher_G_d_path is not None:
+            util.load_network(self.netG_teacher_d, self.opt.restore_teacher_G_d_path, verbose)
         if self.opt.restore_D_path is not None:
             util.load_network(self.netD_teacher, self.opt.restore_D_path, verbose)
         if self.opt.restore_A_path is not None:
@@ -283,14 +283,14 @@ class BaseMultiTeacherDistiller(BaseModel):
         net = getattr(self, 'net%s_student' % 'G')
         self.save_net(net, save_path)
 
-        save_filename = '%s_net%s_teacher.pth' % (epoch, 'G')
+        save_filename = '%s_net%s_teacher_w.pth' % (epoch, 'G')
         save_path = os.path.join(self.save_dir, save_filename)
-        net = getattr(self, 'net%s_teacher' % 'G')
+        net = getattr(self, 'net%s_teacher_w' % 'G')
         self.save_net(net, save_path)
 
-        save_filename = '%s_net_%s_teacher_1.pth' % (epoch, 'G')
+        save_filename = '%s_net_%s_teacher_d.pth' % (epoch, 'G')
         save_path = os.path.join(self.save_dir, save_filename)
-        net = getattr(self, 'net%s_teacher_1' % 'G')
+        net = getattr(self, 'net%s_teacher_d' % 'G')
         self.save_net(net, save_path)
 
         save_filename = '%s_net_%s_teacher.pth' % (epoch, 'D')

@@ -43,14 +43,14 @@ class MultiTeacherDistiller(BaseMultiTeacherDistiller):
         self.vgg = VGGFeature().to(self.device)
 
     def forward(self):
-        self.Tfake_B_0 = self.netG_teacher(self.real_A)
-        self.Tfake_B_1 = self.netG_teacher_1(self.real_A)
-        self.Tfake_Bs = [self.Tfake_B_0.detach(), self.Tfake_B_1.detach()]
+        self.Tfake_B_w = self.netG_teacher_w(self.real_A)
+        self.Tfake_B_d = self.netG_teacher_d(self.real_A)
+        self.Tfake_Bs = [self.Tfake_B_w.detach(), self.Tfake_B_d.detach()]
         self.Sfake_B = self.netG_student(self.real_A)
 
     def calc_CD_loss(self):
         losses = []
-        mapping_layers = self.mapping_layers[self.opt.teacher_netG]
+        mapping_layers = self.mapping_layers[self.opt.teacher_netG_w]
         for i, netA in enumerate(self.netAs):
             n = mapping_layers[i]
             netA_replicas = replicate(netA.cuda(), self.gpu_ids)
@@ -67,24 +67,24 @@ class MultiTeacherDistiller(BaseMultiTeacherDistiller):
 
     def backward_G_teacher(self):
 
-        fake_AB = torch.cat((self.real_A, self.Tfake_B_0), 1)
+        fake_AB_w = torch.cat((self.real_A, self.Tfake_B_w), 1)
         FLAGS.teacher_ids = 1
-        pred_fake = self.netD_teacher(fake_AB)
-        self.loss_G_gan = self.criterionGAN(pred_fake, True, for_discriminator=False) * self.opt.lambda_gan
+        pred_fake_w = self.netD_teacher(fake_AB_w)
+        self.loss_G_gan_w = self.criterionGAN(pred_fake_w, True, for_discriminator=False) * self.opt.lambda_gan
         # Second, G(A) = B
-        self.loss_G_recon = self.criterionRecon(self.Tfake_B_0, self.real_B) * self.opt.lambda_recon
+        self.loss_G_recon_w = self.criterionRecon(self.Tfake_B_w, self.real_B) * self.opt.lambda_recon
         # combine loss and calculate gradients
-        self.loss_G = self.loss_G_gan + self.loss_G_recon
+        self.loss_G_w = self.loss_G_gan_w + self.loss_G_recon_w
 
-        fake_AB_1 = torch.cat((self.real_A, self.Tfake_B_1), 1)
+        fake_AB_d = torch.cat((self.real_A, self.Tfake_B_d), 1)
         FLAGS.teacher_ids = 2
-        pred_fake_1 = self.netD_teacher(fake_AB_1)
-        self.loss_G_dgan = self.criterionGAN(pred_fake_1, True, for_discriminator=False) * self.opt.lambda_gan
-        self.loss_G_drecon = self.criterionRecon(self.Tfake_B_1, self.real_B) * self.opt.lambda_recon
-        self.loss_dG = self.loss_G_dgan + self.loss_G_drecon
+        pred_fake_d = self.netD_teacher(fake_AB_d)
+        self.loss_G_gan_d = self.criterionGAN(pred_fake_d, True, for_discriminator=False) * self.opt.lambda_gan
+        self.loss_G_recon_d = self.criterionRecon(self.Tfake_B_d, self.real_B) * self.opt.lambda_recon
+        self.loss_G_d = self.loss_G_gan_d + self.loss_G_recon_d
 
-        self.loss_dG.backward()
-        self.loss_G.backward()
+        self.loss_G_d.backward()
+        self.loss_G_w.backward()
 
 
     def backward_G_student(self):
@@ -119,8 +119,8 @@ class MultiTeacherDistiller(BaseMultiTeacherDistiller):
 
     def optimize_parameters(self, steps):
         self.optimizer_D_teacher.zero_grad()
-        self.optimizer_G_teacher.zero_grad()
-        self.optimizer_G_teacher_1.zero_grad()
+        self.optimizer_G_teacher_w.zero_grad()
+        self.optimizer_G_teacher_d.zero_grad()
         self.optimizer_G_student.zero_grad()
         self.forward()
         if steps % self.opt.n_dis == 0:
@@ -129,8 +129,8 @@ class MultiTeacherDistiller(BaseMultiTeacherDistiller):
             util.set_requires_grad(self.netD_teacher, False)
             self.backward_G_teacher()
             self.optimizer_D_teacher.step()
-            self.optimizer_G_teacher.step()
-            self.optimizer_G_teacher_1.step()
+            self.optimizer_G_teacher_w.step()
+            self.optimizer_G_teacher_d.step()
         self.backward_G_student()
         self.optimizer_G_student.step()
 
@@ -142,10 +142,11 @@ class MultiTeacherDistiller(BaseMultiTeacherDistiller):
         save_dir = os.path.join(self.opt.log_dir, 'eval', str(step))
         os.makedirs(save_dir, exist_ok=True)
         self.netG_student.eval()
-        self.netG_teacher.eval()
-        self.netG_teacher_1.eval()
+        self.netG_teacher_w.eval()
+        self.netG_teacher_d.eval()
         S_fakes, T_fakes, names = [], [[] for _ in range(self.opt.num_teacher)],  []
         cnt = 0
+        id_model_dict = {0: 'w', 1: 'd'}
         for i, data_i in enumerate(tqdm(self.eval_dataloader, desc='Eval       ', position=2, leave=False)):
             self.set_input(data_i)
             self.test()
@@ -164,7 +165,7 @@ class MultiTeacherDistiller(BaseMultiTeacherDistiller):
                             Sfake_im = util.tensor2im(self.Sfake_B[j])
                             util.save_image(input_im, os.path.join(save_dir, 'input', '%s.png') % name, create_dir=True)
                             util.save_image(Sfake_im, os.path.join(save_dir, 'Sfake', '%s.png' % name), create_dir=True)
-                        util.save_image(Tfake_im, os.path.join(save_dir, 'Tfake_%d'%k, '%s.png' %name), create_dir=True)
+                        util.save_image(Tfake_im, os.path.join(save_dir, f'Tfake_{id_model_dict[i]}', '%s.png' %name), create_dir=True)
                         if self.opt.dataset_mode == 'aligned' and k == 0:
                             real_im = util.tensor2im(self.real_B[j])
                             util.save_image(real_im, os.path.join(save_dir, 'real', '%s.png' % name), create_dir=True)
@@ -179,10 +180,10 @@ class MultiTeacherDistiller(BaseMultiTeacherDistiller):
 
         ret = {}
         for i in range(self.opt.num_teacher):
-            ret['metric/fid_teacher_%d'%i] = fid_teachers[i]
+            ret[f'metric/fid_teacher_{id_model_dict[i]}'] = fid_teachers[i]
             if fid_teachers[i] < self.best_fid_teachers[i]:
                 self.best_fid_teachers[i] = fid_teachers[i]
-            ret['metric/fid-best_teacher_%d'%i] = self.best_fid_teachers[i]
+            ret[f'metric/fid-best_teacher_{id_model_dict[i]}'] = self.best_fid_teachers[i]
         ret['metric/fid_student'] = fid_student
         ret['metric/fid-best_student'] = self.best_fid_student
         if 'cityscapes' in self.opt.dataroot and self.opt.direction == 'BtoA':
@@ -200,13 +201,13 @@ class MultiTeacherDistiller(BaseMultiTeacherDistiller):
                 self.is_best = True
                 self.best_mIoU_student = mIoU_student
             for i in range(self.opt.num_teacher):
-                ret['metric/mIoU_teacher%d'%i] = mIoU_teachers[i]
+                ret[f'metric/mIoU_teacher_{id_model_dict[i]}'] = mIoU_teachers[i]
                 if mIoU_teachers[i] > self.best_mIoU_teachers[i]:
                     self.best_mIoU_teachers[i] = mIoU_teachers[i]
-                ret['metric/mIoU-best_teacher%d'%i] = self.best_mIoU_teachers[i]
+                ret[f'metric/mIoU-best_teacher_{id_model_dict[i]}'] = self.best_mIoU_teachers[i]
             ret['metric/mIoU_student'] = mIoU_student
             ret['metric/mIoU-best_student'] = self.best_mIoU_student
-        self.netG_teacher.train()
-        self.netG_teacher_1.train()
+        self.netG_teacher_w.train()
+        self.netG_teacher_d.train()
         self.netG_student.train()
         return ret
