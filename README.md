@@ -95,7 +95,7 @@ Authors: Yuxi Ren*, Jie Wu*, Xuefeng Xiao, Jianchao Yang.
 
 ### Pretrained Model
 
-We provide a list of pre-trained models in [link](https://drive.google.com/drive/folders/1lDSguCuRDKl2bKQzAuc8hR-UE7eTqWvW?usp=sharing).
+We provide a list of pre-trained models in [link](https://drive.google.com/drive/folders/1lDSguCuRDKl2bKQzAuc8hR-UE7eTqWvW?usp=sharing). DRN model can used to compute mIoU [link](https://drive.google.com/drive/folders/0B_4LoEXGO1TwcmhzLXpWUVFEMXM?resourcekey=0-PMTQHtlWMtSBYozjajFLXA).
 
 
 ### Training
