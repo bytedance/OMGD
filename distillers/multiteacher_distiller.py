@@ -165,7 +165,7 @@ class MultiTeacherDistiller(BaseMultiTeacherDistiller):
                             Sfake_im = util.tensor2im(self.Sfake_B[j])
                             util.save_image(input_im, os.path.join(save_dir, 'input', '%s.png') % name, create_dir=True)
                             util.save_image(Sfake_im, os.path.join(save_dir, 'Sfake', '%s.png' % name), create_dir=True)
-                        util.save_image(Tfake_im, os.path.join(save_dir, f'Tfake_{id_model_dict[i]}', '%s.png' %name), create_dir=True)
+                        util.save_image(Tfake_im, os.path.join(save_dir, f'Tfake_{id_model_dict[k]}', '%s.png' %name), create_dir=True)
                         if self.opt.dataset_mode == 'aligned' and k == 0:
                             real_im = util.tensor2im(self.real_B[j])
                             util.save_image(real_im, os.path.join(save_dir, 'real', '%s.png' % name), create_dir=True)
